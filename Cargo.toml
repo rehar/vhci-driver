@@ -1,0 +1,14 @@
+[package]
+name = "vhci_driver"
+license = "MIT"
+description = "Rust Library to interface with the Linux Virtual Host Controller Interface (VHCI) Kernel Module"
+categories = ["Operating systems::Linux APIs"]
+repository = "https://github.com/rehar/vhci-driver.git"
+author = "Rene Harder"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+udev = "0.7.0"
+libudev-sys = "0.1.4"
+libc = "0.2"
