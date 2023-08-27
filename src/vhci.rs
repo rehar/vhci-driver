@@ -4,7 +4,6 @@ use std::io::{ErrorKind, Result};
 use std::net::TcpStream;
 use std::os::fd::{AsFd, AsRawFd};
 use udev::Device;
-use crate::udev_extension::UdevExtension;
 use crate::{UsbSpeed, DevicePortStatus, UsbDevice, ImportedDevice};
 pub const USBIP_VHCI_BUS_TYPE: &str = "platform";
 pub const USBIP_VHCI_DEVICE_NAME: &str = "vhci_hcd.0";

@@ -2,7 +2,7 @@ use std::io::{Error, ErrorKind};
 
 use udev::Device;
 
-use crate::{udev_extension::UdevExtension, DevicePortStatus, UsbDevice, UsbSpeed};
+use crate::{DevicePortStatus, UsbDevice, UsbSpeed};
 
 #[derive(Debug, Clone)]
 pub struct ImportedDevice {

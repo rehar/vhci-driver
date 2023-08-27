@@ -1,7 +1,6 @@
 mod vhci;
 mod usb_speed;
 mod usb_device;
-mod udev_extension;
 mod device_port_status;
 mod imported_device;
 
