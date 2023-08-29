@@ -119,9 +119,14 @@ impl Vhci {
         self.attach_device_to_port(stream, device.busnum, device.devnum, device.speed, port)
     }
 
-    pub fn attach(&mut self, stream: &TcpStream, device: UsbDevice) -> Result<()> {
+    /// Attaches a USB device to the local Virtual Host Controller Interface
+    /// using an existing socket connection `stream` and the USB `device` specification.
+    /// 
+    /// Returns the port it attached the device to
+    pub fn attach(&mut self, stream: &TcpStream, device: UsbDevice) -> Result<u8> {
             let port  = self.get_free_port(device.speed)?;
-            self.attach_to_port(stream, device, port)
+            self.attach_to_port(stream, device, port)?;
+            Ok(port)
     }
     
     pub fn detach(&mut self, port: u8) -> Result<()> {
