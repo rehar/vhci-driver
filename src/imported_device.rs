@@ -2,16 +2,16 @@ use std::io::{Error, ErrorKind};
 
 use udev::Device;
 
-use crate::{DevicePortStatus, UsbDevice, UsbSpeed};
+use crate::{DevicePortStatus, usb_device::{UsbDevice}, UsbSpeed, Port, DevId, BusNum, DevNum};
 
 #[derive(Debug, Clone)]
 pub struct ImportedDevice {
     pub hub: UsbSpeed,
-    pub port: u8,
+    pub port: Port,
     pub status: DevicePortStatus,
-    pub devid: u32,
-    pub busnum: u8,
-    pub devnum: u16,
+    pub devid: DevId,
+    pub busnum: BusNum,
+    pub devnum: DevNum,
     pub udev: Option<UsbDevice>,
 }
 
@@ -67,12 +67,12 @@ impl ImportedDevice {
         )))?;
 
         let busid = elements[6].clone();
-        let busnum = (devid >> 16) as u8;
-        let devnum = (devid & 0x0000ffff) as u16;
+        let busnum = (devid >> 16) as BusNum;
+        let devnum = (devid & 0x0000ffff) as DevNum;
 
         if status != DevicePortStatus::PortNull && status != DevicePortStatus::PortNotAssigned {
             let vdev = Device::from_subsystem_sysname("usb".into(), busid)
-                .map(|dev| Into::<UsbDevice>::into(dev))
+                .map(|dev| Into::<UsbDevice>::into(&dev))
                 .ok();
 
             Ok(Self {

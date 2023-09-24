@@ -4,7 +4,8 @@ use std::io::{ErrorKind, Result};
 use std::net::TcpStream;
 use std::os::fd::{AsFd, AsRawFd};
 use udev::Device;
-use crate::{UsbSpeed, DevicePortStatus, UsbDevice, ImportedDevice};
+use crate::usb_device::UsbDevice;
+use crate::{UsbSpeed, DevicePortStatus, ImportedDevice, Port, BusNum, DevNum, DevId};
 pub const USBIP_VHCI_BUS_TYPE: &str = "platform";
 pub const USBIP_VHCI_DEVICE_NAME: &str = "vhci_hcd.0";
 pub const USBIP_VHCI_DEVICE_NAME_PREFIX: &str = "vhci_hcd.";
@@ -90,7 +91,7 @@ impl Vhci {
         Ok(devices.into_iter().filter(|x|x.udev.is_some() ).collect())
     }
     
-    pub fn get_free_port(&self, speed: UsbSpeed) -> Result<u8>{
+    pub fn get_free_port(&self, speed: UsbSpeed) -> Result<Port>{
 
         let devices = self.imported_device_list()?;
         let hub_speed = match speed {
@@ -99,7 +100,7 @@ impl Vhci {
         };
 
         for dev in devices {
-            if dev.status == DevicePortStatus::PortNull && dev.hub == hub_speed {
+            if dev.status == DevicePortStatus::PortNotAssigned && dev.hub == hub_speed {
                 return Ok(dev.port);
             }
         }
@@ -107,15 +108,15 @@ impl Vhci {
         Err(Error::new(ErrorKind::NotFound, "No free port available."))
     }
 
-    pub fn attach_device_to_port(&mut self, stream: &TcpStream, busnum: u32, devnum: u32, speed: UsbSpeed,  port: u8) -> Result<()>{
+    pub fn attach_device_to_port(&mut self, stream: &TcpStream, busnum: BusNum, devnum: DevNum, speed: UsbSpeed,  port: Port) -> Result<()>{
         let socket = stream.as_fd().as_raw_fd();
-        let devid = (busnum << 16) | devnum;
+        let devid = ((busnum as DevId) << 16) | (devnum as DevId);
 
         let str = format!("{} {} {} {}", port, socket, devid, Into::<u8>::into(speed));
         self.udev.set_attribute_value("attach", str.to_string())
     }
 
-    pub fn attach_to_port(&mut self, stream: &TcpStream, device: UsbDevice, port: u8) -> Result<()> {      
+    pub fn attach_to_port(&mut self, stream: &TcpStream, device: UsbDevice, port: Port) -> Result<()> {      
         self.attach_device_to_port(stream, device.busnum, device.devnum, device.speed, port)
     }
 
@@ -123,18 +124,18 @@ impl Vhci {
     /// using an existing socket connection `stream` and the USB `device` specification.
     /// 
     /// Returns the port it attached the device to
-    pub fn attach(&mut self, stream: &TcpStream, device: UsbDevice) -> Result<u8> {
+    pub fn attach(&mut self, stream: &TcpStream, device: UsbDevice) -> Result<Port> {
             let port  = self.get_free_port(device.speed)?;
             self.attach_to_port(stream, device, port)?;
             Ok(port)
     }
     
-    pub fn detach(&mut self, port: u8) -> Result<()> {
+    pub fn detach(&mut self, port: Port) -> Result<()> {
         self.udev.set_attribute_value("detach", port.to_string())
     }
 
     // todo make macro
-    fn read_attr_default(udev: &Device, attr: &str, default: u64) -> u64 {
+    pub(crate) fn read_attr_default(udev: &Device, attr: &str, default: u64) -> u64 {
         udev.attribute_value(attr)
             .and_then(|s| s.to_str())
             .and_then(|s| u64::from_str_radix(s, 16).ok())
@@ -142,45 +143,4 @@ impl Vhci {
     }
 }
 
-impl From<udev::Device> for UsbDevice {
-    fn from(value: udev::Device) -> Self {
-        let busid = value.sysname().to_str().unwrap_or("").to_string();
 
-        // parse busnum and devnum from busid
-        let ids: Vec<u32> = busid
-            .split("-")
-            .filter_map(|s| s.parse::<u32>().ok())
-            .collect();
-
-        let (busnum, devnum) = if ids.len() == 2 {
-            (ids[0], ids[1])
-        } else {
-            // default
-            (0, 0)
-        };
-
-        let speed = value
-            .attribute_value("speed")
-            .and_then(|s| s.to_str())
-            .map_or(UsbSpeed::Unknown, |s| {
-                UsbSpeed::from_udev_speed(s.to_string())
-            });
-
-        Self {
-            path: value.syspath().to_path_buf(),
-            busid: busid,
-            busnum,
-            devnum,
-            speed: speed,
-            id_vendor: Vhci::read_attr_default(&value, "idVendor", 0) as u16,
-            id_product: Vhci::read_attr_default(&value, "idProduct", 0) as u16,
-            bcd_device: Vhci::read_attr_default(&value, "bcdDevice", 0) as u16,
-            b_device_class: Vhci::read_attr_default(&value, "bDeviceClass", 0) as u8,
-            b_device_sub_class: Vhci::read_attr_default(&value, "bDeviceSubClass", 0) as u8,
-            b_device_protocol: Vhci::read_attr_default(&value, "bDeviceProtocol", 0) as u8,
-            b_configuration_value: Vhci::read_attr_default(&value, "bConfigurationValue", 0) as u8,
-            b_num_configurations: Vhci::read_attr_default(&value, "bNumConfigurations", 0) as u8,
-            b_num_interfaces: Vhci::read_attr_default(&value, "bNumInterfaces", 0) as u8,
-        }
-    }
-}

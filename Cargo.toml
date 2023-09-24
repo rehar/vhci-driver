@@ -5,8 +5,8 @@ description = "Rust Library to interface with the Linux Virtual Host Controller 
 categories = ["Operating systems::Linux APIs"]
 repository = "https://github.com/rehar/vhci-driver.git"
 author = "Rene Harder"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 [dependencies]
-udev = {git = "https://github.com/rehar/udev-rs.git", branch = "expose-from_subsystem_sysname"}
+udev = "0.8.0"

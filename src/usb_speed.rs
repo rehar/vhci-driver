@@ -20,7 +20,7 @@ impl UsbSpeed {
         }
     }
 
-    pub(crate) fn from_udev_speed(val: String) -> Self {
+    pub fn from_udev_speed(val: String) -> Self {
         match val.trim() {
             "1.5" => UsbSpeed::Low,
             "12" => UsbSpeed::Full,
