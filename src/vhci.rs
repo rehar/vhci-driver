@@ -105,13 +105,9 @@ impl Vhci {
         Ok(devices.into_iter().filter(|x|x.udev.is_some() ).collect())
     }
     
-<<<<<<< Updated upstream
-    pub fn get_free_port(&self, speed: UsbSpeed) -> Result<Port>{
-=======
     /// Returns the next free port slot on the VHCI controller 
     /// based on the provided usb device `speed`.
-    pub fn get_free_port(&self, speed: UsbSpeed) -> Result<u8>{
->>>>>>> Stashed changes
+    pub fn get_free_port(&self, speed: UsbSpeed) -> Result<Port>{
 
         let devices = self.imported_device_list()?;
         let hub_speed = match speed {
