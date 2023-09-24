@@ -10,15 +10,21 @@ pub const USBIP_VHCI_BUS_TYPE: &str = "platform";
 pub const USBIP_VHCI_DEVICE_NAME: &str = "vhci_hcd.0";
 pub const USBIP_VHCI_DEVICE_NAME_PREFIX: &str = "vhci_hcd.";
 
+/// A structure to access the USB VHCI kernel driver
 #[derive(Debug, Clone)]
 pub struct Vhci {
+    // The Udev device of the VHCI interface
     udev: Device,
+    // number of supported virtual USB devices
     num_ports: usize,
+    // number of VHCI interfaces, currently multiple interfaces are not supported
     num_ctrls: usize,
 }
 
 impl Vhci {
+    /// Creates a new VHCI driver instance
     pub fn new() -> Result<Self> {
+        // find the vhci udev interface
         let dev = Device::from_subsystem_sysname(
                 USBIP_VHCI_BUS_TYPE.into(), 
                 USBIP_VHCI_DEVICE_NAME.into())
@@ -33,17 +39,20 @@ impl Vhci {
             num_ports: 0,
             num_ctrls: 0,
         };
+
         vdev.num_ports = vdev
             .udev_nports()
             .ok_or(Error::new(ErrorKind::InvalidInput, "No available Ports."))?;
+        
         vdev.num_ctrls = vdev.udev_nctrls()?;
 
-        // make sure we can read all imported devices
+        // just make sure we can read all imported devices
         let _ = vdev.imported_device_list()?;
 
         Ok(vdev)
     }
 
+    /// get the number of ports available for the current VHCI device driver
     fn udev_nports(&self) -> Option<usize> {
         self.udev
             .attribute_value("nports")
@@ -51,6 +60,8 @@ impl Vhci {
             .and_then(|s| { s.parse::<usize>() }.ok())
     }
 
+    /// Gets the number of VHCI control interfaces.
+    /// At this moment only one conrol interface is supported by this libray
     fn udev_nctrls(&self) -> Result<usize> {
         let parent = self.udev.parent().ok_or(Error::new(ErrorKind::Other, ""))?;
         let paths = fs::read_dir(parent.syspath())?;
@@ -67,6 +78,8 @@ impl Vhci {
             .collect();
         Ok(entries.len())
     }
+
+    /// Returns a list of VHIC ports and attached devices.
     fn imported_device_list(&self) -> Result<Vec<ImportedDevice>> {
         let lines = self
             .udev
@@ -86,12 +99,19 @@ impl Vhci {
         Ok(devices)
     }
 
+    /// Returns a list of attached USB devices to the Virtual Host Controller Interface.
     pub fn attached_devices(&self) -> Result<Vec<ImportedDevice>> {
         let devices = self.imported_device_list()?;
         Ok(devices.into_iter().filter(|x|x.udev.is_some() ).collect())
     }
     
+<<<<<<< Updated upstream
     pub fn get_free_port(&self, speed: UsbSpeed) -> Result<Port>{
+=======
+    /// Returns the next free port slot on the VHCI controller 
+    /// based on the provided usb device `speed`.
+    pub fn get_free_port(&self, speed: UsbSpeed) -> Result<u8>{
+>>>>>>> Stashed changes
 
         let devices = self.imported_device_list()?;
         let hub_speed = match speed {

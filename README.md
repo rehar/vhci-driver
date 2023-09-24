@@ -1,2 +1,2 @@
 # vhci-driver
-Rust Library to interface with the Linux Virtual Host Controller Interface (VHCI) Kernel Module
+Rust Library to interface with the USB Virtual Host Controller Interface (VHCI) Linux Kernel Module
